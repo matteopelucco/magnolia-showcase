@@ -33,6 +33,7 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 | Runtime container | **OrbStack** su Mac (consigliato), Docker Desktop su Windows | OrbStack gestisce immagini, container e volumi; Docker Desktop su Mac resta valido |
 | Una immagine, due ruoli | `MAGNOLIA_INSTANCE_TYPE=author\|public` | Verificato: seleziona la cartella di bootstrap corretta |
 | Persistenza | **PostgreSQL 17**, un database per istanza (`magnolia_author`, `magnolia_public`) | Profilo Magnolia `showcase` (`MAGNOLIA_PROFILE`) e XML Jackrabbit con `DataSource` da proprietà di sistema, valorizzate da `docker/setenv.sh` a partire da `MGNL_DB_*`. Indici e datastore restano su file nei volumi |
+| GitHub | `main` **protetto**: push diretti vietati (anche agli admin), PR obbligatoria, 0 approvazioni richieste, 7 check di CI obbligatori; eliminazione automatica dei branch dopo il merge | CI leggera: solo analisi statica e controlli sintattici (workflow `.github/workflows/ci.yml`), nessun test finché non esistono |
 
 ## 3. Modus operandi
 
@@ -49,6 +50,11 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 - **Repository pubblico.** Mai segreti, chiavi di licenza o password reali. Solo un `.env.example` con valori demo.
 - **Diagrammi nel README** (Mermaid, sezione "Architettura"): mostrano solo ciò che esiste; ciò che è pianificato va
   tratteggiato. Si aggiornano nella stessa PR che cambia l'architettura.
+- **Flusso Git e PR.** Su `main` non si fa push: ogni modifica passa da una PR.
+  - Il branch parte sempre da `main` aggiornato (`feat/…`, `fix/…`, `docs/…`, `chore/…`), una PR per argomento, piccola e con descrizione che spiega cosa cambia, cosa è stato verificato e cosa no.
+  - Prima di aprire la PR si eseguono in locale gli stessi controlli della CI (vedi `.github/workflows/ci.yml`): se la PR non passa i 7 check non si può unire.
+  - **PR impilate** (con base un altro branch) solo se la seconda dipende davvero dalla prima: la base va dichiarata nella descrizione e, prima di unire, si controlla che la base sia ancora quella giusta. Il riallineamento automatico a `main` avviene solo se il branch della PR precedente viene cancellato: oggi è attivo (eliminazione automatica dei branch), ma se non si è sicuri si attende il merge della precedente e si apre la nuova da `main`.
+  - Dopo il merge si verifica che il contenuto sia in `main` (non solo che la PR risulti "Merged") e si aggiorna `main` in locale; i branch residui si cancellano.
 - **Decisioni architetturali** registrate come ADR (MADR) in `docs/adr/`.
 - **Struttura**: `webapp/` (WAR), `light-modules/` (sito), `docker-compose.yml` e `Dockerfile` alla radice;
   in arrivo `deploy/helm/`, `e2e/`, `design-system/`.
