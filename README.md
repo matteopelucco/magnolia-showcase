@@ -130,25 +130,44 @@ sono rapidi (circa 20 secondi). Provato su Mac con OrbStack; su Windows non anco
 
 | Servizio | URL / indirizzo |
 |---|---|
-| Author | <http://localhost:8080/.magnolia/admincentral> |
-| Public | <http://localhost:8081> |
+| Author | <http://author.localhost:8080/.magnolia/admincentral> |
+| Public | <http://public.localhost:8081> |
 | PostgreSQL | `localhost:5432` (solo da questo computer), vedi [Database](#database-postgresql) |
 
+> **Usa `author.localhost` e `public.localhost`, non `localhost`.** Le due istanze sono sullo stesso computer con
+> porte diverse, ma i cookie dei browser **non distinguono le porte**: con `localhost:8080` e `localhost:8081`
+> entrambe scrivono un cookie `csrf` per lo stesso host e si sovrascrivono a vicenda. Il login fallisce allora con la
+> pagina *"You are not authorized to access the requested resource… expired session"* (HTTP 403, nel log
+> `Possible CSRF Attack. CSRF token not set`). Con nomi host diversi ogni istanza ha i propri cookie.
+> I nomi `*.localhost` puntano a questo computer senza configurare nulla (verificati con `curl` e in un browser basato
+> su Chromium; Safari e Firefox non verificati: in alternativa usa `127.0.0.1` per una delle due).
+>
+> **Se dopo il login vedi una schermata bianca** o l'errore precedente, il problema è nello stato salvato dal
+> browser (cookie, dati del sito o estensioni): apri l'indirizzo in una **finestra in incognito**, oppure cancella i
+> dati dei siti `localhost`, `author.localhost` e `public.localhost` e disattiva le estensioni. Il server risulta a
+> posto: lo stesso login in un browser pulito apre l'Admincentral sia sull'author sia sulla public.
+
 **Primo accesso.** Magnolia 6.4 mostra una pagina in cui impostare la password dell'utente `superuser`.
-Va fatto una volta per istanza (author e public hanno dati separati).
+Va fatto una volta per istanza (author e public hanno dati separati), usando gli indirizzi qui sopra.
 
 ### Comandi utili
 
 | Cosa | macOS (mise) | Windows / senza mise |
 |---|---|---|
 | Avvia | `mise run up` | `docker compose up -d --build` |
-| Segui i log | `mise run logs` | `docker compose logs -f` |
+| Segui i log di tutto | `mise run logs` | `docker compose logs -f` |
+| Segui solo i log dell'author | `mise run logs-author` | `docker compose logs -f --tail 100 author` |
+| Segui solo i log della public | `mise run logs-public` | `docker compose logs -f --tail 100 public` |
+| Accendi / spegni solo l'author | `mise run start-author` / `mise run stop-author` | `docker compose up -d author` / `docker compose stop author` |
+| Accendi / spegni solo la public | `mise run start-public` / `mise run stop-public` | `docker compose up -d public` / `docker compose stop public` |
 | Shell SQL sul database dell'author | `mise run db-author` | `docker compose exec postgres psql -U magnolia -d magnolia_author` |
 | Shell SQL sul database della public | `mise run db-public` | `docker compose exec postgres psql -U magnolia -d magnolia_public` |
-| Ferma e rimuove i container (i dati restano) | `mise run down` | `docker compose down` |
+| Ferma e rimuove tutti i container (i dati restano) | `mise run down` | `docker compose down` |
 | Riparte da zero (cancella anche i database) | `mise run reset` | `docker compose down -v` |
 | Build locale del WAR, senza Docker | `mise run build` | `.\mvnw.cmd -B -DskipTests package` |
 
+Spegnere un'istanza con `stop-…` non cancella né il container né i dati: `start-…` la riaccende dallo stato in cui
+era (la password del `superuser` resta). Accendere una singola istanza avvia anche PostgreSQL, da cui dipende.
 `mise tasks` elenca tutti i task. Il WAR del build locale è `webapp/target/showcase.war`.
 
 ## Database (PostgreSQL)
