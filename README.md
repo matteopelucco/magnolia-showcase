@@ -6,6 +6,97 @@ container (Docker, poi Kubernetes), test automatici, estensione di feature stand
 
 Gli obiettivi, le decisioni e il modo di lavorare sono in [AGENTS.md](AGENTS.md).
 
+## Architettura
+
+### A runtime
+
+```mermaid
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 50, "rankSpacing": 70}}}%%
+flowchart TB
+    subgraph L1["① CLIENT E POSTAZIONE DI SVILUPPO · il tuo computer (Mac / Windows)"]
+        visitor["<b>Visitatore</b><br/>(browser)"]
+        lm["<b>light-modules/</b><br/>YAML · FreeMarker · CSS<br/>scritti con IDE + mise"]
+        editor["<b>Editor</b><br/>(browser)"]
+    end
+
+    subgraph L2["② APPLICAZIONE · Docker Compose (OrbStack / Docker Desktop) · stessa immagine, ruolo scelto a runtime"]
+        public["<b>Magnolia PUBLIC</b> · :8081<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
+        repl["replica / pubblicazione<br/>author ⇢ public<br/>(da configurare)"]
+        author["<b>Magnolia AUTHOR</b> · :8080<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
+    end
+
+    subgraph L3["③ PERSISTENZA · un container PostgreSQL 17 (127.0.0.1:5432) con un database per istanza + volumi su file system"]
+        subgraph DP["Dati PUBLIC"]
+            dbp[("<b>PostgreSQL</b><br/>db magnolia_public")]
+            volp[("<b>volume public-data</b><br/>indici · datastore")]
+        end
+        subgraph DA["Dati AUTHOR"]
+            dba[("<b>PostgreSQL</b><br/>db magnolia_author")]
+            vola[("<b>volume author-data</b><br/>indici · datastore")]
+        end
+    end
+
+    editor -->|"editing e pubblicazione"| author
+    visitor -->|"sito pubblico"| public
+    lm -->|"bind mount"| author
+    lm -->|"bind mount"| public
+    lm ~~~ repl
+    author -->|"JDBC"| dba
+    author --- vola
+    public -->|"JDBC"| dbp
+    public --- volp
+
+    classDef app fill:#dbeafe,stroke:#2563eb,color:#0f172a
+    classDef store fill:#dcfce7,stroke:#16a34a,color:#0f172a
+    classDef client fill:#fef9c3,stroke:#ca8a04,color:#0f172a
+    classDef note fill:none,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
+    class author,public app
+    class vola,volp,dba,dbp store
+    class lm,editor,visitor client
+    class repl note
+    style L1 fill:#fffbeb,stroke:#ca8a04,color:#713f12
+    style L2 fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+    style L3 fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style DA fill:#bbf7d0,stroke:#16a34a,color:#14532d
+    style DP fill:#bbf7d0,stroke:#16a34a,color:#14532d
+    linkStyle default stroke:#6b7280,stroke-width:2px
+    linkStyle 4 stroke-width:0px,stroke:transparent
+```
+
+- **Tre layer**: client e postazione di sviluppo, applicazione (Docker Compose), persistenza.
+- **Una sola immagine, due ruoli**: author e public sono lo stesso WAR; il ruolo si sceglie con `MAGNOLIA_INSTANCE_TYPE`.
+- **Dati separati per istanza**: ognuna ha il proprio database PostgreSQL (nello stesso container) e il proprio volume
+  con indici di ricerca e binari.
+- **Light module montati dal tuo computer**: si modificano con l'IDE e Magnolia li legge dalla cartella montata.
+- La **replica da author a public** (pubblicazione) è tratteggiata perché non è ancora configurata: è il prossimo passo.
+
+### Dal codice all'immagine
+
+```mermaid
+flowchart LR
+    repo["Repository GitHub<br/>pom · webapp · light-modules"]
+    subgraph docker["Dockerfile multi-stage"]
+        direction LR
+        b["Stage build<br/>maven 3.9 + JDK 21<br/>→ showcase.war"]
+        r["Stage runtime<br/>Tomcat 10.1 + JRE 21<br/>+ setenv.sh + light-modules"]
+        b --> r
+    end
+    img["Immagine unica<br/>magnolia-showcase:dev"]
+    roles["Ruolo scelto a runtime<br/>author · public<br/>MAGNOLIA_INSTANCE_TYPE"]
+    cfg["Configurazione a runtime<br/>MAGNOLIA_PROFILE=showcase<br/>MGNL_DB_URL · USER · PASSWORD"]
+
+    repo --> b
+    r --> img
+    img --> roles
+    cfg --> roles
+
+    pr["Pull request"] --> ci["CI: analisi statica<br/>Maven validate · hadolint · yamllint<br/>actionlint · markdownlint · gitleaks"]
+    ci -->|"check obbligatori"| main["main (protetto)"]
+```
+
+Lo schema mostra solo ciò che esiste oggi. Kubernetes (Helm), i test end-to-end e il design system si aggiungeranno man mano
+e saranno riportati qui.
+
 ## Requisiti
 
 Il build usa JDK 21 e Maven **dentro il container**: per avviare il progetto serve solo **Docker** con Docker Compose v2.
