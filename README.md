@@ -11,37 +11,62 @@ Gli obiettivi, le decisioni e il modo di lavorare sono in [AGENTS.md](AGENTS.md)
 ### A runtime
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "linear", "nodeSpacing": 50, "rankSpacing": 70}}}%%
 flowchart TB
-    subgraph host["Il tuo computer (Mac / Windows)"]
-        direction LR
-        dev["Sviluppatore<br/>IDE + mise"]
-        lm[/"light-modules/<br/>YAML · FreeMarker · CSS"/]
-        browser["Browser"]
-        dev -->|scrive| lm
+    subgraph L1["① CLIENT E POSTAZIONE DI SVILUPPO · il tuo computer (Mac / Windows)"]
+        visitor["<b>Visitatore</b><br/>(browser)"]
+        lm["<b>light-modules/</b><br/>YAML · FreeMarker · CSS<br/>scritti con IDE + mise"]
+        editor["<b>Editor</b><br/>(browser)"]
     end
 
-    subgraph compose["Docker Compose (OrbStack / Docker Desktop)"]
-        direction TB
-        a["<b>author</b> · :8080<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
-        p["<b>public</b> · :8081<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
-        pg[("<b>PostgreSQL 17</b> · 127.0.0.1:5432<br/>db magnolia_author<br/>db magnolia_public")]
-        va[("volume author-data<br/>indici · datastore")]
-        vp[("volume public-data<br/>indici · datastore")]
+    subgraph L2["② APPLICAZIONE · Docker Compose (OrbStack / Docker Desktop) · stessa immagine, ruolo scelto a runtime"]
+        public["<b>Magnolia PUBLIC</b> · :8081<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
+        repl["replica / pubblicazione<br/>author ⇢ public<br/>(da configurare)"]
+        author["<b>Magnolia AUTHOR</b> · :8080<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
     end
 
-    browser -->|"editing e pubblicazione"| a
-    browser -->|"sito pubblico"| p
-    lm -->|"bind mount /opt/light-modules"| a
-    lm -->|"bind mount /opt/light-modules"| p
-    a -->|"JDBC"| pg
-    p -->|"JDBC"| pg
-    a --- va
-    p --- vp
-    a -.->|"replica (da configurare)"| p
+    subgraph L3["③ PERSISTENZA · un container PostgreSQL 17 (127.0.0.1:5432) con un database per istanza + volumi su file system"]
+        subgraph DP["Dati PUBLIC"]
+            dbp[("<b>PostgreSQL</b><br/>db magnolia_public")]
+            volp[("<b>volume public-data</b><br/>indici · datastore")]
+        end
+        subgraph DA["Dati AUTHOR"]
+            dba[("<b>PostgreSQL</b><br/>db magnolia_author")]
+            vola[("<b>volume author-data</b><br/>indici · datastore")]
+        end
+    end
+
+    editor -->|"editing e pubblicazione"| author
+    visitor -->|"sito pubblico"| public
+    lm -->|"bind mount"| author
+    lm -->|"bind mount"| public
+    lm ~~~ repl
+    author -->|"JDBC"| dba
+    author --- vola
+    public -->|"JDBC"| dbp
+    public --- volp
+
+    classDef app fill:#dbeafe,stroke:#2563eb,color:#0f172a
+    classDef store fill:#dcfce7,stroke:#16a34a,color:#0f172a
+    classDef client fill:#fef9c3,stroke:#ca8a04,color:#0f172a
+    classDef note fill:none,stroke:#9ca3af,stroke-dasharray:5 5,color:#6b7280
+    class author,public app
+    class vola,volp,dba,dbp store
+    class lm,editor,visitor client
+    class repl note
+    style L1 fill:#fffbeb,stroke:#ca8a04,color:#713f12
+    style L2 fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+    style L3 fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    style DA fill:#bbf7d0,stroke:#16a34a,color:#14532d
+    style DP fill:#bbf7d0,stroke:#16a34a,color:#14532d
+    linkStyle default stroke:#6b7280,stroke-width:2px
+    linkStyle 4 stroke-width:0px,stroke:transparent
 ```
 
+- **Tre layer**: client e postazione di sviluppo, applicazione (Docker Compose), persistenza.
 - **Una sola immagine, due ruoli**: author e public sono lo stesso WAR; il ruolo si sceglie con `MAGNOLIA_INSTANCE_TYPE`.
-- **Contenuti su PostgreSQL**, con un database per istanza. Indici di ricerca e binari restano su file, nei volumi di ciascuna istanza.
+- **Dati separati per istanza**: ognuna ha il proprio database PostgreSQL (nello stesso container) e il proprio volume
+  con indici di ricerca e binari.
 - **Light module montati dal tuo computer**: si modificano con l'IDE e Magnolia li legge dalla cartella montata.
 - La **replica da author a public** (pubblicazione) è tratteggiata perché non è ancora configurata: è il prossimo passo.
 
