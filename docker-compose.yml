@@ -1,0 +1,31 @@
+name: magnolia-showcase
+
+x-magnolia: &magnolia
+  build: .
+  image: magnolia-showcase:dev
+  restart: unless-stopped
+
+services:
+  author:
+    <<: *magnolia
+    container_name: mgnl-author
+    environment:
+      MAGNOLIA_INSTANCE_TYPE: author
+    ports: ["8080:8080"]
+    volumes:
+      - author-data:/data/magnolia
+      - ./light-modules:/opt/light-modules
+
+  public:
+    <<: *magnolia
+    container_name: mgnl-public
+    environment:
+      MAGNOLIA_INSTANCE_TYPE: public
+    ports: ["8081:8080"]
+    volumes:
+      - public-data:/data/magnolia
+      - ./light-modules:/opt/light-modules
+
+volumes:
+  author-data:
+  public-data:

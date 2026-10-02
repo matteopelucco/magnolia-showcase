@@ -1,0 +1,8 @@
+extends: default
+ignore: |
+  webapp/target/
+rules:
+  line-length: disable
+  document-start: disable
+  truthy:
+    check-keys: false   # "on:" nei workflow GitHub Actions
