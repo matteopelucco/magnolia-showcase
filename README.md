@@ -6,6 +6,72 @@ container (Docker, poi Kubernetes), test automatici, estensione di feature stand
 
 Gli obiettivi, le decisioni e il modo di lavorare sono in [AGENTS.md](AGENTS.md).
 
+## Architettura
+
+### A runtime
+
+```mermaid
+flowchart TB
+    subgraph host["Il tuo computer (Mac / Windows)"]
+        direction LR
+        dev["Sviluppatore<br/>IDE + mise"]
+        lm[/"light-modules/<br/>YAML · FreeMarker · CSS"/]
+        browser["Browser"]
+        dev -->|scrive| lm
+    end
+
+    subgraph compose["Docker Compose (OrbStack / Docker Desktop)"]
+        direction TB
+        a["<b>author</b> · :8080<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
+        p["<b>public</b> · :8081<br/>Magnolia 6.4.10 CE<br/>Tomcat 10.1 · JDK 21"]
+        pg[("<b>PostgreSQL 17</b> · 127.0.0.1:5432<br/>db magnolia_author<br/>db magnolia_public")]
+        va[("volume author-data<br/>indici · datastore")]
+        vp[("volume public-data<br/>indici · datastore")]
+    end
+
+    browser -->|"editing e pubblicazione"| a
+    browser -->|"sito pubblico"| p
+    lm -->|"bind mount /opt/light-modules"| a
+    lm -->|"bind mount /opt/light-modules"| p
+    a -->|"JDBC"| pg
+    p -->|"JDBC"| pg
+    a --- va
+    p --- vp
+    a -.->|"replica (da configurare)"| p
+```
+
+- **Una sola immagine, due ruoli**: author e public sono lo stesso WAR; il ruolo si sceglie con `MAGNOLIA_INSTANCE_TYPE`.
+- **Contenuti su PostgreSQL**, con un database per istanza. Indici di ricerca e binari restano su file, nei volumi di ciascuna istanza.
+- **Light module montati dal tuo computer**: si modificano con l'IDE e Magnolia li legge dalla cartella montata.
+- La **replica da author a public** (pubblicazione) è tratteggiata perché non è ancora configurata: è il prossimo passo.
+
+### Dal codice all'immagine
+
+```mermaid
+flowchart LR
+    repo["Repository GitHub<br/>pom · webapp · light-modules"]
+    subgraph docker["Dockerfile multi-stage"]
+        direction LR
+        b["Stage build<br/>maven 3.9 + JDK 21<br/>→ showcase.war"]
+        r["Stage runtime<br/>Tomcat 10.1 + JRE 21<br/>+ setenv.sh + light-modules"]
+        b --> r
+    end
+    img["Immagine unica<br/>magnolia-showcase:dev"]
+    roles["Ruolo scelto a runtime<br/>author · public<br/>MAGNOLIA_INSTANCE_TYPE"]
+    cfg["Configurazione a runtime<br/>MAGNOLIA_PROFILE=showcase<br/>MGNL_DB_URL · USER · PASSWORD"]
+
+    repo --> b
+    r --> img
+    img --> roles
+    cfg --> roles
+
+    pr["Pull request"] --> ci["CI: analisi statica<br/>Maven validate · hadolint · yamllint<br/>actionlint · markdownlint · gitleaks"]
+    ci -->|"check obbligatori"| main["main (protetto)"]
+```
+
+Lo schema mostra solo ciò che esiste oggi. Kubernetes (Helm), i test end-to-end e il design system si aggiungeranno man mano
+e saranno riportati qui.
+
 ## Requisiti
 
 Il build usa JDK 21 e Maven **dentro il container**: per avviare il progetto serve solo **Docker** con Docker Compose v2.

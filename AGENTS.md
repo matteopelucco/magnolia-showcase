@@ -47,6 +47,8 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 - **Content as code.** Template, dialog e contenuti demo stanno in git (light module e bootstrap), così la demo si riproduce a ogni clone.
 - **Estendere, non modificare.** Le feature standard si estendono con la decorazione delle definizioni, mai toccando il core.
 - **Repository pubblico.** Mai segreti, chiavi di licenza o password reali. Solo un `.env.example` con valori demo.
+- **Diagrammi nel README** (Mermaid, sezione "Architettura"): mostrano solo ciò che esiste; ciò che è pianificato va
+  tratteggiato. Si aggiornano nella stessa PR che cambia l'architettura.
 - **Decisioni architetturali** registrate come ADR (MADR) in `docs/adr/`.
 - **Struttura**: `webapp/` (WAR), `light-modules/` (sito), `docker-compose.yml` e `Dockerfile` alla radice;
   in arrivo `deploy/helm/`, `e2e/`, `design-system/`.
