@@ -1,0 +1,10 @@
+{
+  "config": {
+    "default": true,
+    "MD013": false, // lunghezza righe: la prosa non va a capo forzato
+    "MD033": false, // HTML inline ammesso
+    "MD041": false, // la prima riga non deve per forza essere un H1
+    "MD060": false  // stile dei separatori di tabella: solo estetica
+  },
+  "ignores": ["webapp/target/**", "**/node_modules/**"]
+}

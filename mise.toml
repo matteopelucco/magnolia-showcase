@@ -1,0 +1,27 @@
+# Toolchain e comandi del progetto, gestiti con mise (https://mise.jdx.dev).
+# Setup: `mise install` nella radice del repository.
+
+[tools]
+# Magnolia 6.4 è certificato su Java 17, 21 e 25 (il JDK 27 non è supportato).
+java = "temurin-21"
+# Maven non serve: si usa il Maven Wrapper (./mvnw).
+
+[tasks.up]
+description = "Avvia author (:8080) e public (:8081) con Docker Compose"
+run = "docker compose up -d --build"
+
+[tasks.down]
+description = "Ferma e rimuove i container (i dati restano nei volumi)"
+run = "docker compose down"
+
+[tasks.reset]
+description = "Rimuove container E dati: riparte da zero"
+run = "docker compose down -v"
+
+[tasks.logs]
+description = "Segue i log di author e public"
+run = "docker compose logs -f"
+
+[tasks.build]
+description = "Build locale del WAR con JDK 21 (senza Docker)"
+run = "./mvnw -B -DskipTests package"
