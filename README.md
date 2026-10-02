@@ -1,7 +1,7 @@
 # Magnolia Showcase
 
 Progetto dimostrativo per mostrare le potenzialità di [Magnolia CMS](https://www.magnolia-cms.com) (versione 6.4, Community Edition):
-istanze **Author** e **Public**, un sito di media complessità sviluppato come *content as code*, esecuzione in
+istanze **Author** e **Public** su **PostgreSQL**, un sito di media complessità sviluppato come *content as code*, esecuzione in
 container (Docker, poi Kubernetes), test automatici, estensione di feature standard e un design system.
 
 Gli obiettivi, le decisioni e il modo di lavorare sono in [AGENTS.md](AGENTS.md).
@@ -24,7 +24,7 @@ Dalla radice del repository.
 
 ```bash
 mise install      # una tantum: installa il JDK 21 definito in mise.toml
-mise run up       # build + avvio di author e public
+mise run up       # build + avvio di PostgreSQL, author e public
 ```
 
 **Windows** (PowerShell, con Docker Desktop attivo)
@@ -37,10 +37,11 @@ Su Mac `mise run up` esegue lo stesso `docker compose up -d --build`, quindi fun
 La prima volta il build scarica circa 200 MB di dipendenze e richiede alcuni minuti. Gli avvii successivi
 sono rapidi (circa 20 secondi). Provato su Mac con OrbStack; su Windows non ancora.
 
-| Istanza | URL |
+| Servizio | URL / indirizzo |
 |---|---|
 | Author | <http://localhost:8080/.magnolia/admincentral> |
 | Public | <http://localhost:8081> |
+| PostgreSQL | `localhost:5432` (solo da questo computer), vedi [Database](#database-postgresql) |
 
 **Primo accesso.** Magnolia 6.4 mostra una pagina in cui impostare la password dell'utente `superuser`.
 Va fatto una volta per istanza (author e public hanno dati separati).
@@ -51,11 +52,55 @@ Va fatto una volta per istanza (author e public hanno dati separati).
 |---|---|---|
 | Avvia | `mise run up` | `docker compose up -d --build` |
 | Segui i log | `mise run logs` | `docker compose logs -f` |
+| Shell SQL sul database dell'author | `mise run db-author` | `docker compose exec postgres psql -U magnolia -d magnolia_author` |
+| Shell SQL sul database della public | `mise run db-public` | `docker compose exec postgres psql -U magnolia -d magnolia_public` |
 | Ferma e rimuove i container (i dati restano) | `mise run down` | `docker compose down` |
-| Riparte da zero (cancella anche i dati) | `mise run reset` | `docker compose down -v` |
+| Riparte da zero (cancella anche i database) | `mise run reset` | `docker compose down -v` |
 | Build locale del WAR, senza Docker | `mise run build` | `.\mvnw.cmd -B -DskipTests package` |
 
 `mise tasks` elenca tutti i task. Il WAR del build locale è `webapp/target/showcase.war`.
+
+## Database (PostgreSQL)
+
+Il repository dei contenuti (Jackrabbit) usa **PostgreSQL 17** fin dalla prima installazione, al posto dell'H2
+incluso in Magnolia (che la documentazione sconsiglia per la produzione). Ogni istanza ha il suo database, perché
+author e public non devono condividere le tabelle di Jackrabbit:
+
+| Istanza | Database |
+|---|---|
+| Author | `magnolia_author` |
+| Public | `magnolia_public` |
+
+I database vengono creati da [docker/postgres/01-create-databases.sql](docker/postgres/01-create-databases.sql) solo
+quando il volume `pg-data` è vuoto (primo avvio, o dopo `mise run reset`).
+
+**Credenziali di demo.** Utente `magnolia`, password `magnolia`: sono valori di demo e non vanno riusati altrove.
+Per cambiarli copia [.env.example](.env.example) in `.env` e modifica `POSTGRES_USER`, `POSTGRES_PASSWORD` e
+`POSTGRES_PORT`. La porta è esposta solo su `127.0.0.1`, per usare un client SQL a scelta dal tuo computer.
+Gli indici di ricerca e i binari (datastore) restano su file nei volumi `author-data` e `public-data`.
+
+**Come è configurato.**
+
+- `MAGNOLIA_PROFILE=showcase` (impostato nel `Dockerfile`) attiva la cartella
+  [webapp/src/main/webapp/WEB-INF/config/showcase](webapp/src/main/webapp/WEB-INF/config/showcase). Il suo
+  `magnolia.properties` sovrascrive `magnolia.repositories.jackrabbit.config`, che punta a
+  [jackrabbit-showcase-postgres.xml](webapp/src/main/webapp/WEB-INF/config/repo-conf/jackrabbit-showcase-postgres.xml).
+  Quel file è la copia di quello fornito da Magnolia: cambia solo il `DataSource`, che legge URL e credenziali da
+  proprietà di sistema.
+- [docker/setenv.sh](docker/setenv.sh) converte le variabili d'ambiente `MGNL_DB_URL`, `MGNL_DB_USER` e
+  `MGNL_DB_PASSWORD` in quelle proprietà. Il `docker-compose.yml` le imposta per ogni istanza e l'avvio fallisce subito
+  se mancano.
+- Il driver JDBC (`org.postgresql:postgresql`) non è nel BOM di Magnolia: la versione è fissata in `postgresql.version`
+  nel `pom.xml` padre.
+
+**Da sapere.**
+
+- Le proprietà finiscono tra gli argomenti della JVM, quindi la password è visibile nei log di avvio di Tomcat. Va bene
+  per una demo locale; per ambienti reali serviranno i *secret* (previsti con Kubernetes).
+- Non si passa da H2 a PostgreSQL su un'installazione esistente: se hai già avviato una versione precedente del
+  progetto, esegui `mise run reset` (o `docker compose down -v`) una volta, perdendo i dati.
+- Cancellare solo il volume `pg-data` (e non `author-data` e `public-data`) lascia indici e datastore non allineati al
+  database: per ripartire da zero usa sempre `reset`.
 
 ## Ciclo di sviluppo
 
@@ -124,9 +169,10 @@ Per passare a Java 25 (non ancora provato in questo progetto), secondo il
 
 ```text
 pom.xml              padre Maven (importa il BOM di Magnolia)
-webapp/              WAR basato sulla webapp Community Edition
+webapp/              WAR basato sulla webapp Community Edition (+ profilo `showcase` per PostgreSQL)
 light-modules/       moduli "light" del sito (YAML, FreeMarker)
 Dockerfile           build multi-stage: Maven/JDK 21 → Tomcat 10.1
-docker-compose.yml   author + public
+docker-compose.yml   PostgreSQL + author + public
+docker/              setenv.sh (variabili d'ambiente → JVM) e script SQL di init
 mise.toml            JDK 21 e task (up, down, logs, reset, build)
 ```

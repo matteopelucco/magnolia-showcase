@@ -7,7 +7,7 @@ java = "temurin-21"
 # Maven non serve: si usa il Maven Wrapper (./mvnw).
 
 [tasks.up]
-description = "Avvia author (:8080) e public (:8081) con Docker Compose"
+description = "Avvia PostgreSQL, author (:8080) e public (:8081) con Docker Compose"
 run = "docker compose up -d --build"
 
 [tasks.down]
@@ -15,12 +15,20 @@ description = "Ferma e rimuove i container (i dati restano nei volumi)"
 run = "docker compose down"
 
 [tasks.reset]
-description = "Rimuove container E dati: riparte da zero"
+description = "Rimuove container E dati (database inclusi): riparte da zero"
 run = "docker compose down -v"
 
 [tasks.logs]
-description = "Segue i log di author e public"
+description = "Segue i log di PostgreSQL, author e public"
 run = "docker compose logs -f"
+
+[tasks.db-author]
+description = "Apre psql sul database dell'author (magnolia_author)"
+run = "docker compose exec postgres sh -c 'psql -U \"$POSTGRES_USER\" -d magnolia_author'"
+
+[tasks.db-public]
+description = "Apre psql sul database della public (magnolia_public)"
+run = "docker compose exec postgres sh -c 'psql -U \"$POSTGRES_USER\" -d magnolia_public'"
 
 [tasks.build]
 description = "Build locale del WAR con JDK 21 (senza Docker)"

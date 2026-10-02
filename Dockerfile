@@ -16,9 +16,12 @@ RUN rm -rf /usr/local/tomcat/webapps/* \
  && chown -R magnolia:magnolia /data /opt/light-modules /usr/local/tomcat
 COPY --from=build --chown=magnolia:magnolia /build/webapp/target/showcase.war /usr/local/tomcat/webapps/ROOT.war
 COPY --chown=magnolia:magnolia light-modules /opt/light-modules
+COPY --chown=magnolia:magnolia --chmod=755 docker/setenv.sh /usr/local/tomcat/bin/setenv.sh
 
 # One image, two roles: MAGNOLIA_INSTANCE_TYPE=author|public selects the role at runtime.
-ENV MAGNOLIA_PROFILE=default \
+# MAGNOLIA_PROFILE=showcase loads WEB-INF/config/showcase (PostgreSQL repository).
+# Required at runtime: MGNL_DB_URL, MGNL_DB_USER, MGNL_DB_PASSWORD (see docker-compose.yml).
+ENV MAGNOLIA_PROFILE=showcase \
     MAGNOLIA_INSTANCE_TYPE=author \
     CATALINA_OPTS="-Xms512m -Xmx1536m \
       -Dmagnolia.home=/data/magnolia \

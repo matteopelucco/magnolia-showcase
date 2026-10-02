@@ -26,6 +26,12 @@
       <artifactId>magnolia-community-webapp</artifactId>
       <type>pom</type>
     </dependency>
+    <!-- JDBC driver for the Jackrabbit repository (PostgreSQL). -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
