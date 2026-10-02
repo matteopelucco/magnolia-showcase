@@ -16,6 +16,8 @@
     <!-- Magnolia 6.4 is certified on Java 17, 21 and 25 (Tomcat 10.1+, Jakarta EE 10). -->
     <maven.compiler.release>21</maven.compiler.release>
     <magnoliaBundleVersion>6.4.10</magnoliaBundleVersion>
+    <!-- Not managed by the Magnolia BOM. -->
+    <postgresql.version>42.7.13</postgresql.version>
   </properties>
 
   <modules>

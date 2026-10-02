@@ -32,7 +32,7 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 | Avvio locale | **Docker Compose** | Il build avviene in Docker: non serve Java/Maven sull'host |
 | Runtime container | **OrbStack** su Mac (consigliato), Docker Desktop su Windows | OrbStack gestisce immagini, container e volumi; Docker Desktop su Mac resta valido |
 | Una immagine, due ruoli | `MAGNOLIA_INSTANCE_TYPE=author\|public` | Verificato: seleziona la cartella di bootstrap corretta |
-| Persistenza | Per ora H2 su volume; **PostgreSQL** previsto | Jackrabbit ha URL/credenziali nel file XML: servirà un template |
+| Persistenza | **PostgreSQL 17**, un database per istanza (`magnolia_author`, `magnolia_public`) | Profilo Magnolia `showcase` (`MAGNOLIA_PROFILE`) e XML Jackrabbit con `DataSource` da proprietà di sistema, valorizzate da `docker/setenv.sh` a partire da `MGNL_DB_*`. Indici e datastore restano su file nei volumi |
 
 ## 3. Modus operandi
 
@@ -55,7 +55,7 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 
 - [x] Scheletro Maven (padre + `webapp`), build del WAR 6.4.10
 - [x] Immagine Docker e Compose con author (`:8080`) e public (`:8081`)
-- [ ] PostgreSQL al posto di H2
+- [x] PostgreSQL al posto di H2 (già dalla prima installazione)
 - [ ] Subscriber author → public (replica) funzionante nel Compose
 - [ ] Light module `showcase-site` e contenuti demo
 - [ ] Modulo Java di estensione

@@ -4,13 +4,41 @@ x-magnolia: &magnolia
   build: .
   image: magnolia-showcase:dev
   restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+x-db-credentials: &db-credentials
+  MGNL_DB_USER: ${POSTGRES_USER:-magnolia}
+  MGNL_DB_PASSWORD: ${POSTGRES_PASSWORD:-magnolia}
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: mgnl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-magnolia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-magnolia}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      # Runs only when the pg-data volume is first created.
+      - ./docker/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-magnolia}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   author:
     <<: *magnolia
     container_name: mgnl-author
     environment:
+      <<: *db-credentials
       MAGNOLIA_INSTANCE_TYPE: author
+      MGNL_DB_URL: jdbc:postgresql://postgres:5432/magnolia_author
     ports: ["8080:8080"]
     volumes:
       - author-data:/data/magnolia
@@ -20,12 +48,15 @@ services:
     <<: *magnolia
     container_name: mgnl-public
     environment:
+      <<: *db-credentials
       MAGNOLIA_INSTANCE_TYPE: public
+      MGNL_DB_URL: jdbc:postgresql://postgres:5432/magnolia_public
     ports: ["8081:8080"]
     volumes:
       - public-data:/data/magnolia
       - ./light-modules:/opt/light-modules
 
 volumes:
+  pg-data:
   author-data:
   public-data:
