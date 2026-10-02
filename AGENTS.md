@@ -26,11 +26,12 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 | Versione | Magnolia **6.4.10** (`magnoliaBundleVersion` nel `pom.xml` padre) | Jakarta EE 10 |
 | Edizione | **Community Edition** (GPLv3, nessuna chiave) | 1 author + 1 public. Il passaggio a DX Core avviene importando il suo BOM; la chiave di licenza non va mai nel repo |
 | Java | **JDK 21** (certificati 17, 21, 25) | Il JDK 27 non è certificato. Per lo showcase si resta su 21; il percorso verso 25 (flag JVMCI, `javascript-models` ≥ 4.0.1) è nel README |
-| Toolchain su Mac | **mise** (`mise.toml`): JDK 21 e task `up/down/logs/reset/build` | Su Windows si usano direttamente i comandi `docker compose` |
+| Toolchain su Mac | **mise** (`mise.toml`): JDK 21 e task `up/down/reset/build`, `logs[-author\|-public]`, `start-/stop-author\|public`, `db-author\|public` | Su Windows si usano direttamente i comandi `docker compose` |
 | Application server | **Tomcat 10.1** | Unico certificato. Tomcat 11 non supportato, Jetty non certificato |
 | Rendering | **Server-side**: light module (YAML + FreeMarker) | Variante headless valutabile in seguito |
 | Avvio locale | **Docker Compose** | Il build avviene in Docker: non serve Java/Maven sull'host |
 | Runtime container | **OrbStack** su Mac (consigliato), Docker Desktop su Windows | OrbStack gestisce immagini, container e volumi; Docker Desktop su Mac resta valido |
+| URL locali | `http://author.localhost:8080` e `http://public.localhost:8081`, **mai** `localhost` per entrambe | I cookie non distinguono le porte: con lo stesso host il cookie `csrf` delle due istanze si sovrascrive e il login dà 403. Verificato con `curl`; i dettagli sono nel README |
 | Una immagine, due ruoli | `MAGNOLIA_INSTANCE_TYPE=author\|public` | Verificato: seleziona la cartella di bootstrap corretta |
 | Persistenza | **PostgreSQL 17**, un database per istanza (`magnolia_author`, `magnolia_public`) | Profilo Magnolia `showcase` (`MAGNOLIA_PROFILE`) e XML Jackrabbit con `DataSource` da proprietà di sistema, valorizzate da `docker/setenv.sh` a partire da `MGNL_DB_*`. Indici e datastore restano su file nei volumi |
 | GitHub | `main` **protetto**: push diretti vietati (anche agli admin), PR obbligatoria, 0 approvazioni richieste, 7 check di CI obbligatori; eliminazione automatica dei branch dopo il merge | CI leggera: solo analisi statica e controlli sintattici (workflow `.github/workflows/ci.yml`), nessun test finché non esistono |

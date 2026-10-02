@@ -22,6 +22,30 @@ run = "docker compose down -v"
 description = "Segue i log di PostgreSQL, author e public"
 run = "docker compose logs -f"
 
+[tasks.logs-author]
+description = "Segue solo i log dell'istanza author"
+run = "docker compose logs -f --tail 100 author"
+
+[tasks.logs-public]
+description = "Segue solo i log dell'istanza public"
+run = "docker compose logs -f --tail 100 public"
+
+[tasks.start-author]
+description = "Accende l'istanza author (avvia anche PostgreSQL se serve)"
+run = "docker compose up -d author"
+
+[tasks.stop-author]
+description = "Spegne l'istanza author (il container e i dati restano)"
+run = "docker compose stop author"
+
+[tasks.start-public]
+description = "Accende l'istanza public (avvia anche PostgreSQL se serve)"
+run = "docker compose up -d public"
+
+[tasks.stop-public]
+description = "Spegne l'istanza public (il container e i dati restano)"
+run = "docker compose stop public"
+
 [tasks.db-author]
 description = "Apre psql sul database dell'author (magnolia_author)"
 run = "docker compose exec postgres sh -c 'psql -U \"$POSTGRES_USER\" -d magnolia_author'"
