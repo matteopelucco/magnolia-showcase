@@ -1,5 +1,6 @@
 # Toolchain e comandi del progetto, gestiti con mise (https://mise.jdx.dev).
 # Setup: `mise install` nella radice del repository.
+# Su Windows i task girano in cmd.exe: dove la sintassi differisce c'è una riga `run_windows`.
 
 [tools]
 # Magnolia 6.4 è certificato su Java 17, 21 e 25 (il JDK 27 non è supportato).
@@ -49,11 +50,14 @@ run = "docker compose stop public"
 [tasks.db-author]
 description = "Apre psql sul database dell'author (magnolia_author)"
 run = "docker compose exec postgres sh -c 'psql -U \"$POSTGRES_USER\" -d magnolia_author'"
+run_windows = 'docker compose exec postgres sh -c "psql -U $POSTGRES_USER -d magnolia_author"'
 
 [tasks.db-public]
 description = "Apre psql sul database della public (magnolia_public)"
 run = "docker compose exec postgres sh -c 'psql -U \"$POSTGRES_USER\" -d magnolia_public'"
+run_windows = 'docker compose exec postgres sh -c "psql -U $POSTGRES_USER -d magnolia_public"'
 
 [tasks.build]
 description = "Build locale del WAR con JDK 21 (senza Docker)"
 run = "./mvnw -B -DskipTests package"
+run_windows = '.\mvnw.cmd -B -DskipTests package'

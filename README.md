@@ -99,34 +99,39 @@ e saranno riportati qui.
 
 ## Requisiti
 
-Il build usa JDK 21 e Maven **dentro il container**: per avviare il progetto serve solo **Docker** con Docker Compose v2.
+Il build usa JDK 21 e Maven **dentro il container**: per avviare il progetto servono solo **Docker** con Docker
+Compose v2 e, come strumento consigliato per toolchain e comandi, [mise](https://mise.jdx.dev). Vale su macOS e
+su Windows allo stesso modo.
 
-- **macOS:** consigliato [OrbStack](https://orbstack.dev), un'alternativa leggera a Docker Desktop che
-  include `docker` e `docker compose` (`brew install --cask orbstack`). Da OrbStack si vedono anche
-  container, immagini e volumi del progetto e se ne aprono i log. Anche Docker Desktop funziona.
-  Per toolchain e comandi si usa [mise](https://mise.jdx.dev) (`brew install mise`).
-- **Windows:** Docker Desktop.
+| | macOS | Windows |
+|---|---|---|
+| Runtime dei container | [OrbStack](https://orbstack.dev) (consigliato): `brew install --cask orbstack`. Anche Docker Desktop funziona | Docker Desktop |
+| mise (consigliato) | `brew install mise` | `winget install jdx.mise` (in alternativa `scoop install mise` o `choco install mise`) |
+
+OrbStack è un'alternativa leggera a Docker Desktop che include `docker` e `docker compose`; da lì si vedono anche
+container, immagini e volumi del progetto e se ne aprono i log.
+
+mise installa il JDK 21 e offre i task del progetto (`mise run …`), identici su tutti i sistemi. Non è
+indispensabile: ogni task è un normale comando `docker compose` o Maven, riportato in [Comandi utili](#comandi-utili).
 
 ## Avvio in locale
 
-Dalla radice del repository.
-
-**macOS** (Terminale, con mise)
+Dalla radice del repository, in un terminale (Terminale su macOS, PowerShell su Windows) con Docker attivo.
 
 ```bash
 mise install      # una tantum: installa il JDK 21 definito in mise.toml
 mise run up       # build + avvio di PostgreSQL, author e public
 ```
 
-**Windows** (PowerShell, con Docker Desktop attivo)
+`mise tasks` elenca tutti i task disponibili. Senza mise, `mise run up` equivale a:
 
-```powershell
+```bash
 docker compose up -d --build
 ```
 
-Su Mac `mise run up` esegue lo stesso `docker compose up -d --build`, quindi funziona anche senza mise.
 La prima volta il build scarica circa 200 MB di dipendenze e richiede alcuni minuti. Gli avvii successivi
-sono rapidi (circa 20 secondi). Provato su Mac con OrbStack; su Windows non ancora.
+sono rapidi (circa 20 secondi). Provato su Mac con OrbStack. Su Windows è verificato `mise run build` (build del
+WAR con JDK 21); l'avvio con Docker Desktop non ancora.
 
 | Servizio | URL / indirizzo |
 |---|---|
@@ -152,7 +157,10 @@ Va fatto una volta per istanza (author e public hanno dati separati), usando gli
 
 ### Comandi utili
 
-| Cosa | macOS (mise) | Windows / senza mise |
+Con mise (consigliato) i comandi sono gli stessi su macOS e Windows. A destra il comando diretto equivalente, utile
+come riferimento o se mise non c'è.
+
+| Cosa | mise | Comando diretto |
 |---|---|---|
 | Avvia | `mise run up` | `docker compose up -d --build` |
 | Segui i log di tutto | `mise run logs` | `docker compose logs -f` |
@@ -164,7 +172,9 @@ Va fatto una volta per istanza (author e public hanno dati separati), usando gli
 | Shell SQL sul database della public | `mise run db-public` | `docker compose exec postgres psql -U magnolia -d magnolia_public` |
 | Ferma e rimuove tutti i container (i dati restano) | `mise run down` | `docker compose down` |
 | Riparte da zero (cancella anche i database) | `mise run reset` | `docker compose down -v` |
-| Build locale del WAR, senza Docker | `mise run build` | `.\mvnw.cmd -B -DskipTests package` |
+| Build locale del WAR, senza Docker | `mise run build` | `./mvnw -B -DskipTests package` (macOS) · `.\mvnw.cmd -B -DskipTests package` (Windows) |
+
+Sui comandi diretti `mvnw` serve un JDK 21 nel `PATH` (o in `JAVA_HOME`); con mise lo installa `mise install`.
 
 Spegnere un'istanza con `stop-…` non cancella né il container né i dati: `start-…` la riaccende dallo stato in cui
 era (la password del `superuser` resta). Accendere una singola istanza avvia anche PostgreSQL, da cui dipende.

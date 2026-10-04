@@ -17,7 +17,7 @@ Showcase locale di **Magnolia CMS** da mostrare al business, pubblico su GitHub.
 7. l'adozione di un **design system** (da costruire con un agente designer su Figma).
 
 Vincoli: usare lo stato dell'arte di Magnolia **documentato online** e lo stato dell'arte di architettura per
-progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
+progetti web/CMS. Esecuzione locale su Mac e Windows (stessi comandi, via mise).
 
 ## 2. Decisioni prese
 
@@ -26,7 +26,7 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 | Versione | Magnolia **6.4.10** (`magnoliaBundleVersion` nel `pom.xml` padre) | Jakarta EE 10 |
 | Edizione | **Community Edition** (GPLv3, nessuna chiave) | 1 author + 1 public. Il passaggio a DX Core avviene importando il suo BOM; la chiave di licenza non va mai nel repo |
 | Java | **JDK 21** (certificati 17, 21, 25) | Il JDK 27 non è certificato. Per lo showcase si resta su 21; il percorso verso 25 (flag JVMCI, `javascript-models` ≥ 4.0.1) è nel README |
-| Toolchain su Mac | **mise** (`mise.toml`): JDK 21 e task `up/down/reset/build`, `logs[-author\|-public]`, `start-/stop-author\|public`, `db-author\|public` | Su Windows si usano direttamente i comandi `docker compose` |
+| Toolchain | **mise** (`mise.toml`) su Mac **e** Windows: JDK 21 e task `up/down/reset/build`, `logs[-author\|-public]`, `start-/stop-author\|public`, `db-author\|public` | Su Windows i task girano in `cmd`: dove serve c'è una riga `run_windows`. I comandi `docker compose` e Maven restano nel README come riferimento |
 | Application server | **Tomcat 10.1** | Unico certificato. Tomcat 11 non supportato, Jetty non certificato |
 | Rendering | **Server-side**: light module (YAML + FreeMarker) | Variante headless valutabile in seguito |
 | Avvio locale | **Docker Compose** | Il build avviene in Docker: non serve Java/Maven sull'host |
@@ -44,7 +44,8 @@ progetti web/CMS. Esecuzione locale su Mac (supporto Windows per l'avvio).
 - **Verificare prima di dichiarare fatto.** Un comando va nel README solo se è stato eseguito.
 - **Build riproducibile.** Si costruisce con Docker o con `./mvnw` (Maven Wrapper). Niente Maven installato globalmente.
 - **Comandi come task mise.** I comandi ricorrenti vivono in `mise.toml`; quando se ne aggiunge uno si aggiorna
-  anche la tabella "Comandi utili" del README, con l'equivalente per Windows.
+  anche la tabella "Comandi utili" del README, con il comando diretto equivalente; se la sintassi differisce su
+  Windows (`cmd`) si aggiunge `run_windows` al task.
 - **Un solo artefatto** (WAR/immagine) per author e public; la differenza è configurazione a runtime (12-factor).
 - **Content as code.** Template, dialog e contenuti demo stanno in git (light module e bootstrap), così la demo si riproduce a ogni clone.
 - **Estendere, non modificare.** Le feature standard si estendono con la decorazione delle definizioni, mai toccando il core.
